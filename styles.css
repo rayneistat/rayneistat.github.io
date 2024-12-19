@@ -1,0 +1,120 @@
+body {
+	font-family: Helvetica, Arial, sans-serif; /* gets overridden */
+	font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+	background-color: #FFFFFF;
+	color: #343434;
+	text-align: justify;
+}
+
+a {
+	color: #343434;
+}
+
+.project {
+	width: 50%;
+	margin: 0 auto;
+	margin-top: 40px;
+}
+
+.citation {
+	text-align: left;
+}
+
+/* header styles go here */
+h4 {
+	margin: 0;
+	padding-bottom: 10px;
+}
+
+h1, h2, h3 {
+	margin: 0;
+	padding: 0;
+	text-transform: uppercase;
+}
+
+.column {
+	float: left;
+}
+
+.left {
+	margin-left: 10%;
+	width: 20%;
+}
+
+.right {
+	margin-right: 10%;
+	width: 60%;
+	padding: 40px;
+	margin-right: 0;
+}
+
+.portfolio_begin {
+	margin-top: 50px;
+}
+
+.credential {
+	margin-left: 0%;
+	text-align: justify;
+}
+
+.margin {
+	width: 10%;
+}
+
+img {
+	max-width: 100%;
+	height: auto;
+	display: block;
+	margin-left: auto;
+	margin-right: auto;
+}
+
+.image-row {
+	display: flex;
+	justify-content: center;
+}
+
+.image-row img {
+	max-width: 100%;
+	height: auto;
+}
+
+.centered-gif {
+	display: block;
+	margin: 0 auto;
+	max-width: 100%;
+	height: auto;
+}
+
+video {
+	max-width: 100%;
+	height: auto;
+	display: block;
+	margin-left: auto;
+	margin-right: auto;
+	clip-path: inset(0% 15% 0% 15%); /* clip video to get rid of the black strips for square videos*/
+}
+
+.row:after {
+  content: "";
+  display: table;
+  clear: both;
+}
+
+.body_picture {
+	margin-left: 2%;
+	margin-right: 2%;
+	margin-bottom: 2%;
+}
+
+summary {
+	cursor: pointer;
+	padding: 5px;
+	text-decoration: underline;
+	color:#343434;
+	background-color: #F7F7F7;
+}
+
+details {
+	background-color: #F7F7F7;
+}

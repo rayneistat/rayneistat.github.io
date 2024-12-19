@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+
+<html>
+	<head>
+		<title>RN: OAPP_4AN</title>
+		<link rel="icon" type="image/x-icon" href="misc_images/ray_favicon3.png">
+		<link rel="stylesheet" href="styles.css">
+        <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+	</head>
+	
+	<body>
+		<div class="row">
+				
+			<!-- begin project explanation -->
+        <div class="project">
+            <div class="row">
+                <h3>Observability-Aware Path Planning for Autonomous Navigation<i><br>(August 2023 - August 2024)<br>Master of Science Thesis</i></h3>
+				<details>
+                    <summary>Abstract</summary>
+                    <p>Terrain-Aided Navigation (TAN) is a popular method of localization for GPS-denied vehicles. There are many ways to perform TAN, such as Bathymetric SLAM (BSLAM) and Bayesian Filtering with the aid of an a priori map. These techniques have been studied extensively, but show an overall lack of rigorous observability analyses. Without nonlinear observability analyses, TAN practitioners do not have an analytical method to indicate which areas of terrain will provide the best opportunity to maximize localization performance. This paper presents a novel method for transforming a terrain map into a map that shows areas with the best potential for localization and uses it to plan mission paths that minimize localization error. The path planner is then tested with a series of MATLAB simulations, featuring custom-generated maps as well as a terrain map of Hawaii that tests the technique’s viability on naturally-occurring terrain, with favorable results.</p>
+                </details>
+
+                <h4>Introduction</h4>
+
+                <p>A popular problem with Autonomous Underwater Vehicles (AUVs) is that GPS is often unusable for localization because of how tough it is to pass a radio signal through seawater. A popular solution is to use seafloor data, often collected with an onboard SONAR, which is fused with Inertial Measurement Unit (IMU) data to provide a localization estimate. This is called Terrain-Aided Navigation (TAN).</p>
+
+                <p>One thing you'll see when you perform TAN is that depending on the shape of the seafloor, the quality of the estimate can vary: if the seafloor is varied and has many peaks and valleys, that gets good localization. If it's the opposite and the seafloor is flat, localization is poor.</p>
+
+                <p><img src="visual_aids/jung2.png" alt="Terrain Map"></p>
+
+                <p>You can see how seafloor "roughness" can affect vehicle localization by looking at the pictures above from a publication by Jung et. al. (cite here), where less color variation corresponds to less seafloor height variation. The vehicle takes a lawnmower pattern. On the graph, more deviation between lines corresponds to poorer localization. <b>The problem I solved with my thesis project is this: How can we select a path for a TAN-enabled vehicle that maximizes its localization accuracy during a mission?</b></p>
+
+                <h4>Methodology</h4>
+
+                <p>The solution that I proposed came down to two major components: (1) a new way to process a terrain map that would yield a new map that shows where the good areas to localize are, and (2) a path planning strategy that would take this new map as an argument to generate a path that takes advantage of these good zones.</p>
+
+                <h4>Task 1: Process a terrain map into a new map that shows good localization zones</h4>
+
+                <p>To do this, it's good to refresh yourself on the concept of <i>observability</i> in control systems. In a canonical linear system,</p>
+
+                <p>
+                $$
+                    \begin{align}
+                    \dot{\mathbf{x}} &= A\mathbf{x} + B\mathbf{u} \\
+                    y &= C\mathbf{x} + D\mathbf{u}
+                    \end{align}
+                $$
+                </p>
+
+                <p>You can manipulate the terms \(A\) and \(C\) to tell whether or not you can deduce the entire state from just the measurements you're taking:</p>
+
+                <p>
+                $$
+                    \mathcal{O} = 
+                    \begin{bmatrix} C \\ CA \\ \vdots \\ CA^{n-1} \end{bmatrix}
+                $$
+                </p>
+
+                <p>Where \(\mathcal{O}\) is the <i>Observability Matrix</i> and \(n\) is the total number of individual states. If \(\mathcal{O}\) is full rank, the system is said to be <i>observable</i>. In nonlinear systems, where the model takes a more general form:</p>
+
+                <p>
+                $$
+                \begin{align}
+                    \dot{\mathbf{x}} &= g(\mathbf{x},\mathbf{u}) \\
+                    z &= h(\mathbf{x},\mathbf{u})
+                \end{align}
+                $$
+                </p>
+
+                <p>Simply concatenating multiplied matrices is not possible. To handle nonlinearities, other researchers have used Differential Algebra, Power Series and Numerical methods to find observability matrices, but for this project, I used Differential Geometry in the form of a series of Lie Derivatives. The result is a matrix that looks very similar to \(\mathcal{O}\), but describes observability behavior between states.</p>
+
+                <p>This process, called a nonlinear observability analysis, is the process by which I turned a topographic terrain map into an "observability map" that shows where the vehicle is able to localize itself the most effectively. In the figure below, you can see how an observability analysis of this system transforms a sample terrain map into a set of observability maps based on the heading of the vehicle:</p>
+
+                <p><img src="visual_aids/omap_array.png" alt="Observability Map Array"></p>
+
+                <h4>Task 2: Use the map to plan a path that maximizes localization accuracy.</h4>
+
+                <p>After the map was created, the next step was to implement a path planning algorithm to take individual location values of the observability map as an argument in the cost function. I chose Dijkstra's algorithm as a basis for this planner because it was simple and guaranteed an optimally-short path. The result was a path planner that explored the features that reached the most observable features first, with respect to how far they were from the starting location.</p>
+
+                <video autoplay loop muted>
+                    <source src="visual_aids/planner.mp4" type="video/mp4">
+                    Your browser does not support the video tag.
+                </video>
+                
+                <h4>Results</h4>
+
+                <p>The simulator I built included the observability analysis, the path planner, as well as the kinematics/measurement/Particle Filter simulator. I've included a block diagram of what I made, along with an outline of my research's novel contribution below:</p>
+
+                <p><img src="visual_aids/blockdiagram.png" alt="System Block Diagram"></p>
+                
+                <p>I designed two experiments to validate the observability analysis and novel path planner; I've included one of them here. For this leg of the project, I turned a topographic map of the Hawaiian seafloor into a grayscale map and passed it into my simulator. After I included land area where the planner was not allowed to go, it planned a path from the starting waypoint to the ending waypoint:</p>
+
+                <img src="visual_aids/hawaii_picture.png" alt="Topographic Map of Hawaii" style="max-width: 75%">
+                
+                <p>This particular plan begins around Honolulu and travels to a destination in the middle of the sea. You can watch the plan converge in real time below:</p>
+
+                <video autoplay loop muted style="clip-path: inset(0% 13% 0% 13%);">
+                    <source src="visual_aids/hawaii_planner.mp4" type="video/mp4">
+                    Your browser does not support the video tag.
+                </video>
+
+                <!--
+                <div class="image-row">
+                    <img src="visual_aids/hawaii_naive.png" alt="Naive Hawaii Path Plan">
+                    <img src="visual_aids/hawaii_oa.png" alt="Observability-Aware Hawaii Path Plan">
+                </div>
+                -->
+
+                <p>After that, I tested this observability-aware path plan against a straight, "Naive" plan. Throughout the mission, the observability-aware plan maintains a high degree of accuracy compared to the naive plan. The promise of my planner strengthens more when you consider how well each planner is able to reach the destination more accurately. The observability-aware plan is clearly more accurate than the naive one:</p>
+
+                <div class="image-row">
+                    <img src="visual_aids/hawaii_scatter.png" alt="Final Destination Scatterplot">
+                    <img src="visual_aids/hawaii_boxchart.png" alt="Localization Accuracy During Mission">
+                </div>
+
+                <h4>Conclusions</h4>
+
+                <p>There are many potential applications for this type of path planner, and can serve as a general foundation for more specific studies in the area of GPS-denied, Terrain-Aided Navigation. This project makes the assumption that the vehicle being used is an AUV, but the theory that supports observability map creation can be extended to any kind of scalar field. As a result, I believe this theory can find a home in other fields such as Space/Celestial Navigation or Surgical Robotics.</p>
+                
+                <img src="gifs/under_construction.gif" alt="Check back later for more updates!" class="centered-gif"/>
+
+                <h4>References</h4>
+
+                <p class="citation">Ma, T., Ding, S., Li, Y., and Fan, J., "A review of terrain aided navigation for underwater vehicles," vol. 281, p. 114779. [Online]. Available: https://www.sciencedirect.com/science/article/pii/S0029801823011630</p>
+                <p class="citation">Thrun, S., Burgard, W., and Fox, D., <i>Probabilistic Robotics (Intelligent Robotics and Autonomous Agents).</i> The MIT Press, 2005.</p>
+                <p class="citation">Jung, J., Park, J., Choi, J., and Choi, H.-T., "Terrain based navigation for an autonomous surface vehicle with a multibeam sonar," in <i>OCEANS 2019 - Marseille,</i> 2019, pp. 1-4</p>
+                <p class="citation">Hermann, R., and Krener, A., "Nonlinear controllability and observability," <i>IEEE Transactions on Automatic Control,</i> vol. 22, no. 5, pp. 728-740, 1977.</p>
+                <p class="citation">"Bathymetric map of hawaii," https://geoportal.hawaii.gov/datasets/HiStateGIS::ocean-depth/explore?loaction=20.755819%2C-156.829813%2C7.45, accessed: 2024-05-13.</p>
+                <p class="citation">Villaverde, A. F., "Observability and structural identifiability of nonlinear biological systems," <i>Complexity,</i> vol. 2019 no. 8497093, p. 12, 2019 [Online]. Available: https://doi.org/10.1155/2019/8497093</p>
+                <p class="citation">Bhattacharyya, D. and Pati, K. C., "Nonlinear controllability and observability analysis of dc-dc boost converter using lie algebra," in <i>2019 International Conference on Computing, Power and Communication Technologies (GUCON),</i> 2019, pp. 75-81.</p>
+
+
+
+
+                
+            </div>
+            <div class="row"><a href="homepage.html">Home</a></div>
+        </div> <!-- right column div -->
+			
+    </div>
+	</body>
+
+</html>

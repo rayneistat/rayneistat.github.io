@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+
+<html>
+	<head>
+		<title>RN: EKF_4TAN+L</title>
+		<link rel="icon" type="image/x-icon" href="misc_images/ray_favicon3.png">
+		<link rel="stylesheet" href="styles.css">
+        <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+	</head>
+	
+	<body>
+		<div class="row">
+				
+			<!-- begin project explanation -->
+        <div class="project">
+            <div class="row">
+                <h3>Extended Kalman Filtering for Terrain-Aided Navigation and Localization<i><br>(August 2024 - Present)<br>Independent Research</i></h3>
+
+                <details>
+                    <summary>Abstract</summary>
+                    <p>In Terrain-Aided Navigation (TAN), Particle Filters (PFs) are commonly used to localize the vehicle during a mission because of its resilience to nonlinear and multimodal probability distributions. This lends itself well to vehicle location hypotheses, because oftentimes the localization system is not confident enough to converge to one location and instead maintains a few hypotheses in the event that one becomes more prominent over the rest. However, the Particle Filter uses a lot of computational resources which detracts from its accuracy and reliability. In this paper, a novel formulation of the Extended Kalman Filter (EKF) is presented in an attempt to improve computational efficiency. This is done by using an <i>a priori</i> map to characterize the shape of the terrain so that the estimator can be more informed as measurements come in. This localization algorithm is then tested in a MATLAB simulation on custom-generated maps.</p>
+                </details>
+
+                <h4>Introduction</h4>
+
+                <p>As I was wrapping up the research for my MS thesis, I had an idea for another work that used a similar method as what I was working on. In Terrain-Aided Navigation, using different types of Kalman Filters is a complicated task because of the nonlinear nature of the vehicle model and the measurements. Many times, hypotheses for vehicle locations depend on map matching, which can be done with Kalman Filters, but often is not sufficient because if that hypothesis ever drifts too far from the ground truth, the estimator becomes useless. I am currently in the middle of investigating a novel method of Extended Kalman Filtering that characterizes the shape of the terrain as the vehicle takes its measurements. The project currently isn't far enough along where I can communicate results, but I hope this will provide sufficient way to navigate without GPS using terrain measurements. If this body of work is good enough, I would like to publish this as well.</p>
+
+                <h4>Methodology</h4>
+                <p>My idea for how to tackle this problem is sprung from the work I did for my MS thesis, Observability-aware path planning for autonomous navigation (link here). In that work, I did an observability map of an entire terrain map while also taking the system's kinematic and measurement models into consideration. The result was a system that could localize based on <i>a priori</i> knowledge of the environment before the mission began. For this project, <b>the problem I'm trying to solve is this: How can I create <i>a priori</i> knowledge for my vehicle model so that it can run with faster estimators like the Extended Kalman Filter (EKF)?</b></p>
+
+                <h4>Extended Kalman Filtering during TAN</h4>
+
+                <p>The Kalman Filter family of Bayesian estimators are great but they're the greatest when they work with linear, time invariant (LTI) systems. For vehicle navigation, I'm using a unicycle model, which is highly nonlinear. Normally, this would be a fine problem for an EKF or even a UKF to solve, but the measurmement model is also highly nonlinear. In fact, it's almost completely unknown because of the nature of terrain navigation. Because you don't know exactly what signal the vehicle will pick up, there's no way you can line it up with any particular mathematical model.</p>
+
+                <p>For a general nonlinear system</p>
+
+                <p>
+                    $$
+                    \begin{align}
+                        \dot{\mathbf{x}} &= g(\mathbf{x},\mathbf{u}) \\
+                        z &= h(\mathbf{x},\mathbf{u})
+                    \end{align}
+                    $$
+                </p>
+
+                <p>The algorithm for an EKF looks like this:</p>
+
+                <p>
+                    $$
+                    \begin{align}
+                        \bar{\mathbf{\hat{x}}}_{k+1} &= g(\mathbf{x}_k,\mathbf{u}_k) & &\text{Predict State Estimate} \\
+                        \bar{\Sigma}_{k+1} &= G_k\Sigma_kG_k^T + R & &\text{Predict State Covariance} \\ \\
+                        K_{k+1} &= \bar{\Sigma}_{k+1}H_k^T(H_k\bar{\Sigma}_{k+1}H_k^T + Q^T)^{-1} & &\text{Compute Kalman Gain} \\ \\
+                        \mathbf{\hat{x}}_{k+1} &= \bar{\mathbf{\hat{x}}}_{k+1} + K_{k+1}(z_k - h(\mathbf{x}_k,\mathbf{u}_k)) & &\text{Update State Estimate} \\
+                        \Sigma_{k+1} &= (I - K_{k+1}H_k)\Sigma_k & &\text{Update State Covariance}
+                    \end{align}
+                    $$
+                </p>
+
+                <p>Where</p>
+
+                <p>
+                    $$
+                    \begin{align}
+                    G_k &= J_f(\mathbf{x}_k) \\
+                    H_k &= J_h(\mathbf{x}_k),
+                    \end{align}
+                    $$
+                </p>
+
+                <p>which denote the Jacobians of the state transition and measurement functions at the timestep that they're evaluated. This is slightly different than a regular, linear Kalman Filter because it linearizes both the state transition and measurement equations locally around the current state.</p>
+
+                <details>
+                    <summary>An example of a "normal" measurement equation</summary>
+                    <p>The EKF gets used a lot for radar applications, which take the range \(z\) of an aerial vehicle with respect to a ground station at \((0,0)\) that has the radar module on it:</p>
+
+                    <p>
+                        $$
+                        \begin{align}
+                        z &= \sqrt{x^2 + y^2}
+                        \end{align}
+                        $$
+                    </p>
+
+                    <p>In this example, let's say our vehicle has the kinematic model of a unicycle which has a position and heading, implying a state of \(\mathbf{x} = [x,y,\theta]\). To find an \(H\) matrix for some timestep, we take the Jacobian of this function with respect to the states:</p>
+
+                    <p>
+                        $$
+                        H =
+                        \begin{bmatrix}
+                        \frac{\partial z}{\partial x} \\
+                        \frac{\partial z}{\partial y} \\
+                        \frac{\partial z}{\partial \theta}
+                        \end{bmatrix} =
+                        \begin{bmatrix}
+                        \frac{x}{\sqrt{x^2 + y^2}} \\
+                        \frac{y}{\sqrt{x^2 + y^2}} \\
+                        0
+                        \end{bmatrix}
+                        $$
+                    </p>
+
+                    <p>These derivatives are tractable, and we can use the EKF as it's formulated to track our state.</p>
+
+                </details>
+
+                <p>When you're taking terrain data with a SoNAR, LiDAR or something similar, you're only getting range and bearing measurements, and you can't generalize any kind of terrain that you might find. What we're left with is the most general measurement function,</p>
+
+                <p>
+                    $$
+                        z = h(\mathbf{x},\mathbf{u}).
+                    $$
+                </p>
+
+                <p>It's this aspect of TAN that makes a different localization algorithm, like the Particle Filter (PF) a better option for this kind of problem. But the PF is more computationally complex than the EKF, which is why this inquiry is important.</p>
+
+                <h4>Solution</h4>
+
+                <p>The solution that I'm proposing was originally from my <a href="oapp.html">thesis project</a>, which provides a framework for a nonlinear observability analysis for TAN. This new project will provide a new framework for managing a nonlinear measurement function.</p>
+
+                <img src="gifs/under_construction.gif" alt="Check back later for more updates!" class="centered-gif"/>
+
+                <h4>References</h4>
+                <p class="citation">Thrun, S., Burgard, W., and Fox, D., <i>Probabilistic Robotics (Intelligent Robotics and Autonomous Agents).</i> The MIT Press, 2005.</p>
+                <p class="citation">Hostetler, L. and Andreas, R., "Nonlinear kalman filtering techniques for terrain-aided navigation," vol. 28, no. 3, pp. 315-323.</p>
+                <p class="citation">Ma, T., Ding, S., Li, Y., and Fan, J., "A review of terrain aided navigation for underwater vehicles," vol. 281, p. 114779. [Online]. Available: https://www.sciencedirect.com/science/article/pii/S0029801823011630</p>
+                <p class="citation">Kay, S. M., <i>Fundamentals of Statistical Signal Processing: Estimation Theory.</i> Prentice Hall Signal Processing Series, 1993.</p>
+
+                
+                
+                
+
+                
+            </div>
+            <div class="row"><a href="homepage.html">Home</a></div>
+        </div> <!-- right column div -->
+			
+    </div>
+	</body>
+
+</html>
